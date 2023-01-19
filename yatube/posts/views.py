@@ -8,7 +8,8 @@ from .models import Comment, Follow, Group, Post, User
 
 
 def paginator_page(queryset, request):
-    return Paginator(queryset, POSTS_ON_PAGE_NUMB).get_page(request.GET.get("page"))
+    return Paginator(queryset, POSTS_ON_PAGE_NUMB).get_page(
+        request.GET.get("page"))
 
 
 def index(request):
@@ -24,7 +25,8 @@ def group_posts(request, slug):
     return render(
         request,
         "posts/group_list.html",
-        {"group": group, "page_obj": paginator_page(group.posts.all(), request)},
+        {"group": group,
+         "page_obj": paginator_page(group.posts.all(), request)},
     )
 
 
@@ -55,7 +57,8 @@ def post_detail(request, post_id):
         "posts/post_detail.html",
         {
             "post": get_object_or_404(Post, pk=post_id),
-            "comments": Comment.objects.filter(post_id=post_id).order_by("-created"),
+            "comments": Comment.objects.filter(
+                post_id=post_id).order_by("-created"),
             "form": CommentForm(request.POST or None),
         },
     )
@@ -77,7 +80,9 @@ def post_edit(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if request.user != post.author:
         return redirect("posts:post_detail", post.pk)
-    form = PostForm(request.POST or None, instance=post, files=request.FILES or None)
+    form = PostForm(request.POST or None,
+                    instance=post,
+                    files=request.FILES or None)
     if not form.is_valid():
         return render(
             request,
@@ -107,7 +112,9 @@ def add_comment(request, post_id):
 def follow_index(request):
     post = Post.objects.filter(author__following__user=request.user)
     return render(
-        request, "posts/follow.html", {"page_obj": paginator_page(post, request)}
+        request,
+        "posts/follow.html",
+        {"page_obj": paginator_page(post, request)}
     )
 
 

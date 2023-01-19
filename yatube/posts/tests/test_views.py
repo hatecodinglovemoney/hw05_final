@@ -96,7 +96,8 @@ class PostViewsTest(TestCase):
 
     def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
-        self.context_post(self.authorized_client.get(self.POST_URL).context.get("post"))
+        self.context_post(self.authorized_client.get(
+            self.POST_URL).context.get("post"))
 
     def test_post_not_in_another_group(self):
         """Пост при создании пост не попал в другую группу."""

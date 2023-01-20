@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from yatube.settings import NUMB_SYMBOLS_SHORT_TEXT
 
-from ..models import Group, Post, User
+from ..models import Comment, Follow, Group, Post, User
 
 
 class PostModelTest(TestCase):

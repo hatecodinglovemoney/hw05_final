@@ -6,15 +6,10 @@
 
 {% block content %}
   <h1> Избранные авторы </h1>
-  {% include 'includes/switcher.html' %}
+  {% include 'posts/includes/switcher.html' %}
     {% for post in page_obj %}
-      {% include 'includes/post.html' %}
-      {% if post.group %}
-        <p>
-          <a href="{% url 'posts:group_list' post.group.slug %}"># {{ post.group }}</a>
-        </p>
-      {% endif %}
-      {% if not forloop.last %}<hr>{% endif %}
+      {% include 'posts/includes/post.html' %}
+    {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
   {% include 'includes/paginator.html' %}
 {% endblock %}

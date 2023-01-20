@@ -1,17 +1,33 @@
+import shutil
+import tempfile
+
 from django import forms
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from ..models import Comment, Group, Post, User
 
 USERNAME = "NoName"
+ANOTHER_USERNAME = "NoName2"
 GROUP_SLUG = "test-slug"
 ANOTHER_SLUG = "test-slug2"
 CREATE_POST = reverse("posts:post_create")
 PROFILE_URL = reverse("posts:profile", args=[USERNAME])
+SMALL_GIF = (
+    b"\x47\x49\x46\x38\x39\x61\x02\x00"
+    b"\x01\x00\x80\x00\x00\x00\x00\x00"
+    b"\xFF\xFF\xFF\x21\xF9\x04\x00\x00"
+    b"\x00\x00\x00\x2C\x00\x00\x00\x00"
+    b"\x02\x00\x01\x00\x00\x02\x02\x0C"
+    b"\x0A\x00\x3B"
+)
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostViewsTest(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -20,6 +36,9 @@ class PostViewsTest(TestCase):
         cls.user = User.objects.create_user(username=USERNAME)
         cls.authorized_client = Client()
         cls.authorized_client.force_login(cls.user)
+        cls.another_user = User.objects.create_user(username=ANOTHER_USERNAME)
+        cls.another_authorized_client = Client()
+        cls.another_authorized_client.force_login(cls.another_user)
         cls.group = Group.objects.create(
             title="Тестовая группа",
             slug=GROUP_SLUG,
@@ -38,44 +57,72 @@ class PostViewsTest(TestCase):
             slug=ANOTHER_SLUG,
         )
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
     def test_create_post(self):
-        """Проверим создание поста через форму"""
+        """Проверим создание поста через форму
+        авторизированным клиентом"""
         posts = set(Post.objects.all())
-        small_gif = (
-            b"\x47\x49\x46\x38\x39\x61\x02\x00"
-            b"\x01\x00\x80\x00\x00\x00\x00\x00"
-            b"\xFF\xFF\xFF\x21\xF9\x04\x00\x00"
-            b"\x00\x00\x00\x2C\x00\x00\x00\x00"
-            b"\x02\x00\x01\x00\x00\x02\x02\x0C"
-            b"\x0A\x00\x3B"
-        )
+        uploaded = SimpleUploadedFile(
+            name='another_small.gif',
+            content=SMALL_GIF,
+            content_type='image/gif')
         form_data = {
             "text": "Тестовый пост2",
             "group": self.group.id,
-            "image": SimpleUploadedFile(
-                name="small.gif", content=small_gif, content_type="image/gif"
-            ),
+            "image": uploaded,
         }
         response = self.authorized_client.post(
             CREATE_POST,
             data=form_data,
             follow=True,
         )
-        new_posts = set(Post.objects.all()) - posts
-        self.assertEqual(len(new_posts), 1)
-        post = new_posts.pop()
+        posts = set(Post.objects.all()) - posts
+        self.assertEqual(len(posts), 1)
+        post = posts.pop()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(post.group.id, form_data["group"])
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(post.author, self.user)
         self.assertRedirects(response, PROFILE_URL)
+        self.assertEqual(post.image, 'posts/another_small.gif')
+
+    def test_not_create_post(self):
+        """Проверим создание поста через форму
+        неавторизированным клиентом"""
+        posts = set(Post.objects.all())
+        uploaded = SimpleUploadedFile(
+            name='another_small_2.gif',
+            content=SMALL_GIF,
+            content_type='image/gif')
+        form_data = {
+            "text": "Тестовый пост2",
+            "group": self.group.id,
+            "image": uploaded,
+        }
+        response = self.guest_client.post(
+            CREATE_POST,
+            data=form_data,
+        )
+        posts = set(Post.objects.all()) - posts
+        self.assertEqual(len(posts), 0)
+        self.assertEqual(response.status_code, 302)
 
     def test_post_edit_post(self):
-        """Проверяем редактирование поста"""
+        """Проверяем редактирование поста
+        авторизированным клиентом"""
         post_count = Post.objects.count()
+        uploaded = SimpleUploadedFile(
+            name='another_small_3.gif',
+            content=SMALL_GIF,
+            content_type='image/gif')
         form_data = {
             "text": "Тестовый пост редактирование",
             "group": self.another_group.id,
+            "image": uploaded
         }
         response = self.authorized_client.post(
             self.EDIT_POST_URL, data=form_data, follow=True
@@ -87,6 +134,33 @@ class PostViewsTest(TestCase):
         self.assertEqual(post.author, self.post.author)
         self.assertEqual(post.group.id, form_data["group"])
         self.assertEqual(post.text, form_data["text"])
+        self.assertEqual(post.image, 'posts/another_small_3.gif')
+
+    def test_post_not_edit_post(self):
+        """Проверяем редактирование поста неавторизированным
+        клиентом или не автором поста"""
+        post_count = Post.objects.count()
+        clients_not_edit = [
+            self.another_authorized_client,
+            self.guest_client,
+        ]
+        uploaded = SimpleUploadedFile(
+            name='another_small_4.gif',
+            content=SMALL_GIF,
+            content_type='image/gif')
+        form_data = {
+            "text": "Тестовый пост редактирование",
+            "group": self.another_group.id,
+            "image": uploaded
+        }
+        for client in clients_not_edit:
+            response = client.post(
+                self.EDIT_POST_URL, data=form_data,
+            )
+            new_post_count = Post.objects.count()
+            self.assertEqual(new_post_count, post_count)
+            self.assertNotEqual(response.status_code, 200)
+
 
     def test_create_post_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
@@ -97,6 +171,7 @@ class PostViewsTest(TestCase):
         form_fields = {
             "text": forms.fields.CharField,
             "group": forms.fields.ChoiceField,
+            "image": forms.fields.ImageField,
         }
         for url in url_list:
             with self.subTest(url=url):
@@ -118,15 +193,16 @@ class PostViewsTest(TestCase):
             data=form_data,
             follow=True,
         )
-        new_comments = set(Comment.objects.all()) - comments
-        self.assertEqual(len(new_comments), 1)
-        comment = new_comments.pop()
+        comments = set(Comment.objects.all()) - comments
+        self.assertEqual(len(comments), 1)
+        comment = comments.pop()
         self.assertEqual(comment.text, form_data["text"])
         self.assertEqual(comment.post, self.post)
+        self.assertEqual(comment.author, self.user)
 
     def test_user_create_comment(self):
         """Гости не могут комментировать посты."""
-        comments_count = Comment.objects.count()
+        comments = set(Comment.objects.all())
         form_data = {
             "text": "Комментарий",
         }
@@ -135,4 +211,5 @@ class PostViewsTest(TestCase):
             data=form_data,
             follow=True,
         )
-        self.assertEqual(Comment.objects.count(), comments_count)
+        comments = set(Comment.objects.all()).difference(comments)
+        self.assertEqual(len(comments), 0)

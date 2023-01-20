@@ -8,14 +8,9 @@
 {% block content %}
   <h1> Последние обновления на сайте </h1>
   {% cache 20 index_page page_obj %}
-  {% include 'includes/switcher.html' %}
+  {% include 'posts/includes/switcher.html' %}
     {% for post in page_obj %}
-      {% include 'includes/post.html' %}
-      {% if post.group %}
-        <p>
-          <a href="{% url 'posts:group_list' post.group.slug %}"># {{ post.group }}</a>
-        </p>
-      {% endif %}
+      {% include 'posts/includes/post.html' %}
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
   {% endcache %}

@@ -14,3 +14,8 @@
 {% endthumbnail %}
 <p>{{ post.text|linebreaksbr }}</p>
 <a href="{% url 'posts:post_detail' post.id %}">Подробная информация </a>
+{% if post.group %}
+<p>
+  <a href="{% url 'posts:group_list' post.group.slug %}">#{{ post.group }}</a>
+</p>
+{% endif %}

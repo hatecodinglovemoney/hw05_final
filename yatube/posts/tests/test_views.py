@@ -1,6 +1,6 @@
 import shutil
 import tempfile
-import math
+
 from datetime import datetime
 
 from django.core.cache import cache
@@ -116,7 +116,7 @@ class PostViewsTest(TestCase):
         """Авторизованный пользователь может подписываться
         на пользователей."""
         cnt_follower = Follow.objects.count()
-        response = self.another_authorized_client.get(PROFILE_FOLLOW_URL)
+        self.another_authorized_client.get(PROFILE_FOLLOW_URL)
         self.assertEqual(Follow.objects.count() - cnt_follower, 1)
         self.assertTrue(Follow.objects.filter(
             author__username=USERNAME,

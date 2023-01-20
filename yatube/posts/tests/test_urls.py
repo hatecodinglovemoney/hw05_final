@@ -44,7 +44,8 @@ class PostURLTest(TestCase):
         cls.EDIT_POST_URL = reverse("posts:post_edit", args=[cls.post.id])
         cls.EDIT_POST_URL_REDIRECT = f"{LOGIN_URL}?next={cls.EDIT_POST_URL}"
         cls.ADD_COMMENT_URL = reverse("posts:add_comment", args=[cls.post.id])
-        cls.ADD_COMMENT_URL_REDIRECT = f"{LOGIN_URL}?next={cls.ADD_COMMENT_URL}"
+        cls.ADD_COMMENT_URL_REDIRECT = \
+            f"{LOGIN_URL}?next={cls.ADD_COMMENT_URL}"
         cls.another = Client()
         cls.another_user = User.objects.create_user(username=ANOTHER_USERNAME)
         cls.another.force_login(cls.another_user)

@@ -161,7 +161,6 @@ class PostViewsTest(TestCase):
             self.assertEqual(new_post_count, post_count)
             self.assertNotEqual(response.status_code, 200)
 
-
     def test_create_post_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
         url_list = [

@@ -72,7 +72,7 @@ class PostURLTest(TestCase):
             (PROFILE_FOLLOW_URL, self.guest, 302),
             (PROFILE_FOLLOW_URL, self.another, 302),
             (PROFILE_UNFOLLOW_URL, self.another, 302),
-            (PROFILE_UNFOLLOW_URL, self.author, 302),
+            (PROFILE_UNFOLLOW_URL, self.author, 404),
             (PROFILE_UNFOLLOW_URL, self.guest, 302),
         ]
         for url, client, status in cases:
@@ -91,7 +91,6 @@ class PostURLTest(TestCase):
             (PROFILE_FOLLOW_URL, self.author, PROFILE_URL),
             (PROFILE_FOLLOW_URL, self.guest, PROFILE_FOLLOW_REDIRECT),
             (PROFILE_FOLLOW_URL, self.another, PROFILE_URL),
-            (PROFILE_UNFOLLOW_URL, self.author, PROFILE_URL),
             (PROFILE_UNFOLLOW_URL, self.guest, PROFILE_UNFOLLOW_REDIRECT),
             (PROFILE_UNFOLLOW_URL, self.another, PROFILE_URL),
         ]

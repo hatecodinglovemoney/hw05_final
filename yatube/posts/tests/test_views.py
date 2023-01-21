@@ -174,7 +174,7 @@ class PostViewsTest(TestCase):
                 group=self.group,
                 text=f"Пост #{i}",
             )
-            for i in range(POSTS_ON_PAGE_NUMB+1)
+            for i in range(POSTS_ON_PAGE_NUMB + 1)
         )
         url_pages = {
             INDEX_URL: POSTS_ON_PAGE_NUMB,

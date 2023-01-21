@@ -36,7 +36,8 @@ class PostModelTest(TestCase):
         models_str = [
             (self.post.text[:NUMB_SYMBOLS_SHORT_TEXT], str(self.post)),
             (self.group.title, str(self.group)),
-            (f'{self.follow.user} подписан на {self.follow.author}', str(self.follow)),
+            (f'{self.follow.user} подписан на {self.follow.author}',
+             str(self.follow)),
             (self.comment.text[:NUMB_SYMBOLS_SHORT_TEXT], str(self.comment))
         ]
         for model, str_method in models_str:

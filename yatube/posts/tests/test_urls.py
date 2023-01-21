@@ -68,7 +68,6 @@ class PostURLTest(TestCase):
             (FOLLOW_INDEX_URL, self.author, 200),
             (self.ADD_COMMENT_URL, self.author, 302),
             (self.ADD_COMMENT_URL, self.guest, 302),
-            (self.ADD_COMMENT_URL, self.another, 302),
             (PROFILE_FOLLOW_URL, self.author, 302),
             (PROFILE_FOLLOW_URL, self.guest, 302),
             (PROFILE_FOLLOW_URL, self.another, 302),
@@ -89,7 +88,6 @@ class PostURLTest(TestCase):
             (FOLLOW_INDEX_URL, self.guest, FOLLOW_INDEX_URL_REDIRECT),
             (self.ADD_COMMENT_URL, self.author, self.POST_URL),
             (self.ADD_COMMENT_URL, self.guest, self.ADD_COMMENT_URL_REDIRECT),
-            (self.ADD_COMMENT_URL, self.another, self.POST_URL),
             (PROFILE_FOLLOW_URL, self.author, PROFILE_URL),
             (PROFILE_FOLLOW_URL, self.guest, PROFILE_FOLLOW_REDIRECT),
             (PROFILE_FOLLOW_URL, self.another, PROFILE_URL),
@@ -111,6 +109,7 @@ class PostURLTest(TestCase):
             CREATE_URL: "posts/create_post.html",
             self.EDIT_POST_URL: "posts/create_post.html",
             UNEXISTING_URL: "core/404.html",
+            FOLLOW_INDEX_URL: "posts/follow.html",
         }
         for url, template in templates_url_dict.items():
             with self.subTest(url=url, template=template):

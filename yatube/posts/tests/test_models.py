@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from yatube.settings import NUMB_SYMBOLS_SHORT_TEXT
 
-from ..models import Group, Post, User
+from ..models import Comment, Follow, Group, Post, User
 
 
 class PostModelTest(TestCase):
@@ -10,6 +10,7 @@ class PostModelTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username="auth")
+        cls.user_follower = User.objects.create_user(username='user_follower')
         cls.group = Group.objects.create(
             title="Тестовая группа",
             slug="test-slug",
@@ -20,9 +21,23 @@ class PostModelTest(TestCase):
             text="Тестовый пост",
             group=cls.group,
         )
+        cls.comment = Comment.objects.create(
+            author=cls.user,
+            text="Тестовый комментарий",
+            post=cls.post
+        )
+        cls.follow = Follow.objects.create(
+            author=cls.user,
+            user=cls.user_follower,
+        )
 
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
-        self.assertEqual(self.post.text[:NUMB_SYMBOLS_SHORT_TEXT],
-                         str(self.post))
-        self.assertEqual(self.group.title, str(self.group))
+        models_str = [
+            (self.post.text[:NUMB_SYMBOLS_SHORT_TEXT], str(self.post)),
+            (self.group.title, str(self.group)),
+            (f'{self.follow.user} подписан на {self.follow.author}', str(self.follow)),
+            (self.comment.text[:NUMB_SYMBOLS_SHORT_TEXT], str(self.comment))
+        ]
+        for model, str_method in models_str:
+            self.assertEqual(model, str_method)

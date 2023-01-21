@@ -53,21 +53,23 @@ class PostViewsTest(TestCase):
             slug=GROUP_SLUG,
             description="Тестовое описание",
         )
-        cls.post = Post.objects.create(
-            author=cls.user,
-            text="Тестовый пост",
-            group=cls.group,
-            pub_date=cls.date,
-            image=SimpleUploadedFile(
-                name="small.gif", content=SMALL_GIF, content_type="image/gif"
-            ),
-        )
-        cls.POST_URL = reverse("posts:post_detail", args=[cls.post.id])
-        cls.EDIT_POST_URL = reverse("posts:post_edit", args=[cls.post.id])
         cls.another_group = Group.objects.create(
             title="Тестовая группа другая",
             slug=ANOTHER_SLUG,
         )
+
+    def setUp(self):
+        self.post = Post.objects.create(
+            author=self.user,
+            text="Тестовый пост",
+            group=self.group,
+            pub_date=self.date,
+            image=SimpleUploadedFile(
+                name="small.gif", content=SMALL_GIF, content_type="image/gif"
+            ),
+        )
+        self.POST_URL = reverse("posts:post_detail", args=[self.post.id])
+        self.EDIT_POST_URL = reverse("posts:post_edit", args=[self.post.id])
 
     @classmethod
     def tearDownClass(cls):
@@ -119,8 +121,8 @@ class PostViewsTest(TestCase):
         self.another_authorized_client.get(PROFILE_FOLLOW_URL)
         self.assertEqual(Follow.objects.count() - cnt_follower, 1)
         self.assertTrue(Follow.objects.filter(
-            author__username=USERNAME,
-            author__following__user=self.another_user).exists())
+            author=self.user,
+            user=self.another_user).exists())
 
     def test_auth_able_unfollow(self):
         """Авторизованный пользователь может удалять авторов из подписок."""
@@ -131,8 +133,8 @@ class PostViewsTest(TestCase):
         self.another_authorized_client.get(PROFILE_UNFOLLOW_URL)
         self.assertEqual(Follow.objects.count(), cnt_follower)
         self.assertFalse(Follow.objects.filter(
-            author__username=USERNAME,
-            author__following__user=self.another_user).exists())
+            author=self.user,
+            user=self.another_user).exists())
 
     def test_post_not_in_wrong_place(self):
         """Новая запись автора не появляется в неправильной ленте"""
@@ -145,12 +147,14 @@ class PostViewsTest(TestCase):
 
     def test_show_posts_to_followers(self):
         """Новая запись автора появляется в ленте тех, кто на него подписан."""
-        self.another_authorized_client.get(PROFILE_FOLLOW_URL)
+        Follow.objects.create(author=self.user,
+                              user=self.another_user)
         response = self.another_authorized_client.get(FOLLOW_INDEX_URL)
         self.context_post(response.context["page_obj"][0])
 
     def test_cache_index(self):
         """Тест кэша главной страницы"""
+        Post.objects.all().delete()
         cached_content = self.guest_client.get(INDEX_URL).content
         Post.objects.create(text='Тестовый пост', author=self.user)
         response = self.guest_client.get(INDEX_URL)
@@ -161,6 +165,7 @@ class PostViewsTest(TestCase):
 
     def test_paginator_on_pages(self):
         """Пагинация на страницах."""
+        Post.objects.all().delete()
         Follow.objects.create(author=self.user,
                               user=self.another_user)
         Post.objects.bulk_create(
@@ -169,23 +174,17 @@ class PostViewsTest(TestCase):
                 group=self.group,
                 text=f"Пост #{i}",
             )
-            for i in range(POSTS_ON_PAGE_NUMB)
+            for i in range(POSTS_ON_PAGE_NUMB+1)
         )
-        if Post.objects.count() >= POSTS_ON_PAGE_NUMB * 2:
-            post_on_second_page = POSTS_ON_PAGE_NUMB
-        elif Post.objects.count() <= POSTS_ON_PAGE_NUMB:
-            post_on_second_page = 0
-        else:
-            post_on_second_page = Post.objects.count() % POSTS_ON_PAGE_NUMB
         url_pages = {
             INDEX_URL: POSTS_ON_PAGE_NUMB,
-            f"{INDEX_URL}?page=2": post_on_second_page,
+            f"{INDEX_URL}?page=2": 1,
             GROUP_URL: POSTS_ON_PAGE_NUMB,
-            f"{GROUP_URL}?page=2": post_on_second_page,
+            f"{GROUP_URL}?page=2": 1,
             PROFILE_URL: POSTS_ON_PAGE_NUMB,
-            f"{PROFILE_URL}?page=2": post_on_second_page,
+            f"{PROFILE_URL}?page=2": 1,
             FOLLOW_INDEX_URL: POSTS_ON_PAGE_NUMB,
-            f"{FOLLOW_INDEX_URL}?page=2": post_on_second_page,
+            f"{FOLLOW_INDEX_URL}?page=2": 1,
         }
         for url_page, args in url_pages.items():
             with self.subTest(url_page=url_page):

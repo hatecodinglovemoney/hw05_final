@@ -96,7 +96,7 @@ class Comment(models.Model):
         ordering = ('-created',)
 
     def __str__(self):
-        return self.text
+        return self.text[:NUMB_SYMBOLS_SHORT_TEXT]
 
 
 class Follow(models.Model):
@@ -122,3 +122,6 @@ class Follow(models.Model):
                 name='unique_follow'
             )
         ]
+
+    def __str__(self):
+        return f'{self.user} подписан на {self.author}'

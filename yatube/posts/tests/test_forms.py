@@ -8,6 +8,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from ..models import Comment, Group, Post, User
+from ..urls import app_name
 
 USERNAME = "NoName"
 ANOTHER_USERNAME = "NoName2"
@@ -88,9 +89,9 @@ class PostViewsTest(TestCase):
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(post.author, self.user)
         self.assertRedirects(response, PROFILE_URL)
-        self.assertEqual(post.image, 'posts/another_small.gif')
+        self.assertEqual(post.image, f'{app_name}/another_small.gif')
 
-    def test_not_create_post(self):
+    def test_guest_client_not_create_post(self):
         """Проверим создание поста через форму
         неавторизированным клиентом"""
         posts = set(Post.objects.all())
@@ -107,8 +108,7 @@ class PostViewsTest(TestCase):
             CREATE_POST,
             data=form_data,
         )
-        posts = set(Post.objects.all()) - posts
-        self.assertEqual(len(posts), 0)
+        self.assertEqual(posts, set(Post.objects.all()))
         self.assertEqual(response.status_code, 302)
 
     def test_post_edit_post(self):
@@ -134,7 +134,7 @@ class PostViewsTest(TestCase):
         self.assertEqual(post.author, self.post.author)
         self.assertEqual(post.group.id, form_data["group"])
         self.assertEqual(post.text, form_data["text"])
-        self.assertEqual(post.image, 'posts/another_small_3.gif')
+        self.assertEqual(post.image, f'{app_name}/another_small_3.gif')
 
     def test_post_not_edit_post(self):
         """Проверяем редактирование поста неавторизированным
@@ -160,6 +160,14 @@ class PostViewsTest(TestCase):
             new_post_count = Post.objects.count()
             self.assertEqual(new_post_count, post_count)
             self.assertNotEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 302)
+            self.assertFalse(
+                Post.objects.filter(
+                    text="Тестовый пост редактирование",
+                    group=self.another_group.id,
+                    image=f'{app_name}/another_small_4.gif'
+                ).exists()
+            )
 
     def test_create_post_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
@@ -199,7 +207,7 @@ class PostViewsTest(TestCase):
         self.assertEqual(comment.post, self.post)
         self.assertEqual(comment.author, self.user)
 
-    def test_user_create_comment(self):
+    def test_guest_not_create_comment(self):
         """Гости не могут комментировать посты."""
         comments = set(Comment.objects.all())
         form_data = {
@@ -210,5 +218,4 @@ class PostViewsTest(TestCase):
             data=form_data,
             follow=True,
         )
-        comments = set(Comment.objects.all()).difference(comments)
-        self.assertEqual(len(comments), 0)
+        self.assertEqual(set(Comment.objects.all()), comments)

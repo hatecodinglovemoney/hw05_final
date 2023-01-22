@@ -1,7 +1,5 @@
 from django.test import TestCase
 
-from yatube.settings import NUMB_SYMBOLS_SHORT_TEXT
-
 from ..models import Comment, COMMENT_STR, Follow, \
     FOLLOW_STR, Group, Post, POST_STR, User
 
@@ -36,9 +34,9 @@ class PostModelTest(TestCase):
         """Проверяем, что у моделей корректно работает __str__."""
         models_str = [
             (POST_STR.format(
-                author=self.post.author,
+                author=self.post.author.username,
                 group=self.post.group,
-                text=self.post.text[:NUMB_SYMBOLS_SHORT_TEXT]),
+                text=self.post.text),
              self.post),
             (self.group.title, self.group),
             (FOLLOW_STR.format(
@@ -46,8 +44,8 @@ class PostModelTest(TestCase):
                 author=self.follow.author.username),
              self.follow),
             (COMMENT_STR.format(
-                author=self.comment.author,
-                text=self.comment.text[:NUMB_SYMBOLS_SHORT_TEXT]),
+                author=self.comment.author.username,
+                text=self.comment.text),
              self.comment)
         ]
         for str_method, model in models_str:

@@ -1,13 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from yatube.settings import NUMB_SYMBOLS_SHORT_TEXT
-
 User = get_user_model()
 
 FOLLOW_STR = "{user} подписан на {author}"
-COMMENT_STR = "Автор {author} написал комментарий: {text}"
-POST_STR = "Автор {author} написал в группе {group} пост: {text}"
+COMMENT_STR = "Автор {author} написал комментарий: {text:.15}"
+POST_STR = "Автор {author} написал в группе {group} пост: {text:.15}"
 
 
 class Group(models.Model):
@@ -70,9 +68,9 @@ class Post(models.Model):
 
     def __str__(self):
         return POST_STR.format(
-            author=self.author,
+            author=self.author.username,
             group=self.group,
-            text=self.text[:NUMB_SYMBOLS_SHORT_TEXT]
+            text=self.text
         )
 
 
@@ -105,8 +103,8 @@ class Comment(models.Model):
 
     def __str__(self):
         return COMMENT_STR.format(
-            author=self.author,
-            text=self.text[:NUMB_SYMBOLS_SHORT_TEXT]
+            author=self.author.username,
+            text=self.text
         )
 
 

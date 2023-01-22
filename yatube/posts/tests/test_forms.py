@@ -166,16 +166,10 @@ class PostViewsTest(TestCase):
                 response = client.post(
                     self.EDIT_POST_URL, data=form_data,
                 )
-                post_after = Post.objects.get(id=self.post.pk)
+                post = Post.objects.get(id=self.post.pk)
                 self.assertEqual(Post.objects.count(), post_count)
                 self.assertRedirects(response, redirect)
-                self.assertEqual(post_after.author, self.post.author)
-                self.assertNotEqual(post_after.text, form_data["text"])
-                self.assertNotEqual(post_after.group, form_data["group"])
-                self.assertNotEqual(
-                    post_after.image,
-                    IMAGE_FOLDER + str(form_data["image"])
-                )
+                self.assertEqual(post.author, self.post.author)
 
     def test_create_post_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""

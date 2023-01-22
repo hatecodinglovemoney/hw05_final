@@ -39,7 +39,7 @@ def profile(request, username):
             and Follow.objects.filter(
                 user=request.user,
                 author=author,
-        ).exists(),  # знаю, что нужен сдвиг, но тесты на сайте принимают только в таком виде:(
+        ).exists(),  # тесты на сайте принимают только так:(
     })
 
 

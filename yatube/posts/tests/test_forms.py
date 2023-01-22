@@ -1,5 +1,4 @@
 import shutil
-import sys
 import tempfile
 
 from django import forms
@@ -9,8 +8,6 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from ..models import Comment, Group, Post, User
-
-
 
 USERNAME = "NoName"
 ANOTHER_USERNAME = "NoName2"
@@ -93,7 +90,10 @@ class PostViewsTest(TestCase):
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(post.author, self.user)
         self.assertRedirects(response, PROFILE_URL)
-        self.assertEqual(post.image, f'{Post.image.field.upload_to}another_small.gif')
+        self.assertEqual(
+            post.image,
+            f'{Post.image.field.upload_to}another_small.gif'
+        )
 
     def test_guest_client_not_create_post(self):
         """Проверим создание поста через форму
@@ -138,7 +138,10 @@ class PostViewsTest(TestCase):
         self.assertEqual(post.author, self.post.author)
         self.assertEqual(post.group.id, form_data["group"])
         self.assertEqual(post.text, form_data["text"])
-        self.assertEqual(post.image, f'{Post.image.field.upload_to}another_small_3.gif')
+        self.assertEqual(
+            post.image,
+            f'{Post.image.field.upload_to}another_small_3.gif'
+        )
 
     def test_guest_or_another_not_edit_post(self):
         """Проверяем редактирование поста неавторизированным

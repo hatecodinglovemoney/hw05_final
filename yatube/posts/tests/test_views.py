@@ -145,7 +145,10 @@ class PostViewsTest(TestCase):
         ]
         for client, url in cases:
             with self.subTest(client=client, url=url):
-                self.assertNotIn(self.post, client.get(url).context["page_obj"])
+                self.assertNotIn(
+                    self.post,
+                    client.get(url).context["page_obj"]
+                )
 
     def test_show_posts_to_followers(self):
         """Новая запись автора появляется в ленте тех, кто на него подписан."""

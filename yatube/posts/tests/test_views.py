@@ -53,23 +53,21 @@ class PostViewsTest(TestCase):
             slug=GROUP_SLUG,
             description="Тестовое описание",
         )
-        cls.another_group = Group.objects.create(
-            title="Тестовая группа другая",
-            slug=ANOTHER_SLUG,
-        )
-
-    def setUp(self):
-        self.post = Post.objects.create(
-            author=self.user,
+        cls.post = Post.objects.create(
+            author=cls.user,
             text="Тестовый пост",
-            group=self.group,
-            pub_date=self.date,
+            group=cls.group,
+            pub_date=cls.date,
             image=SimpleUploadedFile(
                 name="small.gif", content=SMALL_GIF, content_type="image/gif"
             ),
         )
-        self.POST_URL = reverse("posts:post_detail", args=[self.post.id])
-        self.EDIT_POST_URL = reverse("posts:post_edit", args=[self.post.id])
+        cls.another_group = Group.objects.create(
+            title="Тестовая группа другая",
+            slug=ANOTHER_SLUG,
+        )
+        cls.POST_URL = reverse("posts:post_detail", args=[cls.post.id])
+        cls.EDIT_POST_URL = reverse("posts:post_edit", args=[cls.post.id])
 
     @classmethod
     def tearDownClass(cls):
@@ -86,15 +84,17 @@ class PostViewsTest(TestCase):
 
     def test_index_page_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
-        response = self.authorized_client.get(INDEX_URL)
-        self.assertEqual(len(response.context["page_obj"]), 1)
-        self.context_post(response.context["page_obj"][0])
+        response_context = self.authorized_client.get(
+            INDEX_URL).context["page_obj"]
+        self.assertEqual(len(response_context), 1)
+        self.context_post(response_context[0])
 
     def test_group_page_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
         response = self.authorized_client.get(GROUP_URL)
-        self.assertEqual(len(response.context["page_obj"]), 1)
-        self.context_post(response.context["page_obj"][0])
+        response_context = response.context["page_obj"]
+        self.assertEqual(len(response_context), 1)
+        self.context_post(response_context[0])
         group = response.context.get("group")
         self.assertEqual(group.title, self.group.title)
         self.assertEqual(group.description, self.group.description)
@@ -104,8 +104,9 @@ class PostViewsTest(TestCase):
     def test_profile_page_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
         response = self.authorized_client.get(PROFILE_URL)
-        self.assertEqual(len(response.context["page_obj"]), 1)
-        self.context_post(response.context["page_obj"][0])
+        response_context = response.context["page_obj"]
+        self.assertEqual(len(response_context), 1)
+        self.context_post(response_context[0])
         post_author = response.context.get("author")
         self.assertEqual(post_author, self.user)
 
@@ -117,21 +118,21 @@ class PostViewsTest(TestCase):
     def test_auth_able_follow(self):
         """Авторизованный пользователь может подписываться
         на пользователей."""
-        cnt_follower = Follow.objects.count()
+        count_follower = Follow.objects.count()
         self.another_authorized_client.get(PROFILE_FOLLOW_URL)
-        self.assertEqual(Follow.objects.count() - cnt_follower, 1)
+        self.assertEqual(Follow.objects.count() - count_follower, 1)
         self.assertTrue(Follow.objects.filter(
             author=self.user,
             user=self.another_user).exists())
 
     def test_auth_able_unfollow(self):
         """Авторизованный пользователь может удалять авторов из подписок."""
-        cnt_follower = Follow.objects.count()
+        count_follower = Follow.objects.count()
         Follow.objects.create(author=self.user,
                               user=self.another_user)
-        self.assertEqual(Follow.objects.count() - cnt_follower, 1)
+        self.assertEqual(Follow.objects.count() - count_follower, 1)
         self.another_authorized_client.get(PROFILE_UNFOLLOW_URL)
-        self.assertEqual(Follow.objects.count(), cnt_follower)
+        self.assertEqual(Follow.objects.count(), count_follower)
         self.assertFalse(Follow.objects.filter(
             author=self.user,
             user=self.another_user).exists())
@@ -143,20 +144,22 @@ class PostViewsTest(TestCase):
             (self.authorized_client, ANOTHER_GROUP_URL),
         ]
         for client, url in cases:
-            self.assertNotIn(self.post, client.get(url).context["page_obj"])
+            with self.subTest(client=client, url=url):
+                self.assertNotIn(self.post, client.get(url).context["page_obj"])
 
     def test_show_posts_to_followers(self):
         """Новая запись автора появляется в ленте тех, кто на него подписан."""
         Follow.objects.create(author=self.user,
                               user=self.another_user)
-        response = self.another_authorized_client.get(FOLLOW_INDEX_URL)
-        self.context_post(response.context["page_obj"][0])
+        response_context = self.another_authorized_client.get(
+            FOLLOW_INDEX_URL).context["page_obj"]
+        self.assertEqual(len(response_context), 1)
+        self.context_post(response_context[0])
 
     def test_cache_index(self):
         """Тест кэша главной страницы"""
-        Post.objects.all().delete()
         cached_content = self.guest_client.get(INDEX_URL).content
-        Post.objects.create(text='Тестовый пост', author=self.user)
+        Post.objects.all().delete()
         response = self.guest_client.get(INDEX_URL)
         self.assertEqual(cached_content, response.content)
         cache.clear()

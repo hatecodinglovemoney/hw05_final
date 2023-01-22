@@ -6,11 +6,11 @@
 
 {% block content %}
   <h1>Все посты пользователя {{ author.get_full_name }} </h1>
-  <h4>Всего постов: {{ author.posts.count }} </h4>
-  <h4>Всего подписчиков: {{ author.following.count }} </h4>
-  <h4>Всего подписок: {{ author.follower.count }} </h4>
+  <h4>Постов: {{ author.posts.count }} </h4>
+  <h4>Подписчиков: {{ author.following.count }} </h4>
+  <h4>Подписок: {{ author.follower.count }} </h4>
   <div class="mb-5">
-    {% if request.user.is_authenticated and request.user != author %}
+    {% if user.is_authenticated and user != author %}
       {% if following %}
         <a class="btn btn-lg btn-light"
         href="{% url 'posts:profile_unfollow' author.username %}"
@@ -23,7 +23,7 @@
     {% endif %}
   </div>
   {% for post in page_obj %}
-    {% include 'posts/includes/post.html' with profile=True %}
+    {% include 'posts/includes/post.html' with without_profile_link=True %}
     {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
   {% include 'includes/paginator.html' %}

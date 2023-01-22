@@ -5,6 +5,8 @@ from yatube.settings import NUMB_SYMBOLS_SHORT_TEXT
 
 User = get_user_model()
 
+follow_str = "{user} подписан на {author}"
+
 
 class Group(models.Model):
     title = models.CharField(
@@ -124,4 +126,5 @@ class Follow(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.user} подписан на {self.author}'
+        return follow_str.format(user=self.user.username,
+                                 author=self.author.username)

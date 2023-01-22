@@ -1,4 +1,5 @@
 import shutil
+import sys
 import tempfile
 
 from django import forms
@@ -8,13 +9,15 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from ..models import Comment, Group, Post, User
-from ..urls import app_name
+
+
 
 USERNAME = "NoName"
 ANOTHER_USERNAME = "NoName2"
 GROUP_SLUG = "test-slug"
 ANOTHER_SLUG = "test-slug2"
 CREATE_POST = reverse("posts:post_create")
+LOGIN_URL = reverse("users:login")
 PROFILE_URL = reverse("posts:profile", args=[USERNAME])
 SMALL_GIF = (
     b"\x47\x49\x46\x38\x39\x61\x02\x00"
@@ -52,6 +55,7 @@ class PostViewsTest(TestCase):
         )
         cls.POST_URL = reverse("posts:post_detail", args=[cls.post.pk])
         cls.EDIT_POST_URL = reverse("posts:post_edit", args=[cls.post.pk])
+        cls.EDIT_POST_URL_REDIRECT = f"{LOGIN_URL}?next={cls.EDIT_POST_URL}"
         cls.COMMENT_URL = reverse("posts:add_comment", args=[cls.post.pk])
         cls.another_group = Group.objects.create(
             title="Тестовая группа другая",
@@ -89,7 +93,7 @@ class PostViewsTest(TestCase):
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(post.author, self.user)
         self.assertRedirects(response, PROFILE_URL)
-        self.assertEqual(post.image, f'{app_name}/another_small.gif')
+        self.assertEqual(post.image, f'{Post.image.field.upload_to}another_small.gif')
 
     def test_guest_client_not_create_post(self):
         """Проверим создание поста через форму
@@ -134,15 +138,16 @@ class PostViewsTest(TestCase):
         self.assertEqual(post.author, self.post.author)
         self.assertEqual(post.group.id, form_data["group"])
         self.assertEqual(post.text, form_data["text"])
-        self.assertEqual(post.image, f'{app_name}/another_small_3.gif')
+        self.assertEqual(post.image, f'{Post.image.field.upload_to}another_small_3.gif')
 
-    def test_post_not_edit_post(self):
+    def test_guest_or_another_not_edit_post(self):
         """Проверяем редактирование поста неавторизированным
         клиентом или не автором поста"""
         post_count = Post.objects.count()
+        post_before = Post.objects.get(id=self.post.pk)
         clients_not_edit = [
-            self.another_authorized_client,
-            self.guest_client,
+            (self.another_authorized_client, self.POST_URL),
+            (self.guest_client, self.EDIT_POST_URL_REDIRECT),
         ]
         uploaded = SimpleUploadedFile(
             name='another_small_4.gif',
@@ -153,21 +158,18 @@ class PostViewsTest(TestCase):
             "group": self.another_group.id,
             "image": uploaded
         }
-        for client in clients_not_edit:
-            response = client.post(
-                self.EDIT_POST_URL, data=form_data,
-            )
-            new_post_count = Post.objects.count()
-            self.assertEqual(new_post_count, post_count)
-            self.assertNotEqual(response.status_code, 200)
-            self.assertEqual(response.status_code, 302)
-            self.assertFalse(
-                Post.objects.filter(
-                    text="Тестовый пост редактирование",
-                    group=self.another_group.id,
-                    image=f'{app_name}/another_small_4.gif'
-                ).exists()
-            )
+        post_after = Post.objects.get(id=self.post.pk)
+        for client, redirect in clients_not_edit:
+            with self.subTest(client=client):
+                response = client.post(
+                    self.EDIT_POST_URL, data=form_data,
+                )
+                new_post_count = Post.objects.count()
+                self.assertEqual(new_post_count, post_count)
+                self.assertRedirects(response, redirect)
+                self.assertEqual(post_before.text, post_after.text)
+                self.assertEqual(post_before.group, post_after.group)
+                self.assertEqual(post_before.image, post_after.image)
 
     def test_create_post_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""

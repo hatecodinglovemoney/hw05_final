@@ -23,7 +23,7 @@ ROUTES = [
 
 class Test(TestCase):
     def test_url_routes(self):
-        for url, page, args in ROUTES:
-            with self.subTest(url=url, page=page, args=args):
+        for url, route, args in ROUTES:
+            with self.subTest(url=url, route=route, args=args):
                 self.assertEqual(url, reverse(
-                    f"{app_name}:{page}", args=args))
+                    f"{app_name}:{route}", args=args))

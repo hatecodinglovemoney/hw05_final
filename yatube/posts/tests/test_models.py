@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from yatube.settings import NUMB_SYMBOLS_SHORT_TEXT
 
-from ..models import Comment, Follow, Group, Post, User
+from ..models import Comment, Follow, follow_str, Group, Post, User
 
 
 class PostModelTest(TestCase):
@@ -36,9 +36,11 @@ class PostModelTest(TestCase):
         models_str = [
             (self.post.text[:NUMB_SYMBOLS_SHORT_TEXT], str(self.post)),
             (self.group.title, str(self.group)),
-            (f'{self.follow.user} подписан на {self.follow.author}',
+            (follow_str.format(user=self.follow.user.username,
+                               author=self.follow.author.username),
              str(self.follow)),
             (self.comment.text[:NUMB_SYMBOLS_SHORT_TEXT], str(self.comment))
         ]
         for model, str_method in models_str:
-            self.assertEqual(model, str_method)
+            with self.subTest(model=model, str_method=str_method):
+                self.assertEqual(model, str_method)

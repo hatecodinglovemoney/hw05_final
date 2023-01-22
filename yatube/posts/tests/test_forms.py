@@ -16,6 +16,7 @@ ANOTHER_SLUG = "test-slug2"
 CREATE_POST = reverse("posts:post_create")
 LOGIN_URL = reverse("users:login")
 PROFILE_URL = reverse("posts:profile", args=[USERNAME])
+IMAGE_FOLDER = Post.image.field.upload_to
 SMALL_GIF = (
     b"\x47\x49\x46\x38\x39\x61\x02\x00"
     b"\x01\x00\x80\x00\x00\x00\x00\x00"
@@ -92,7 +93,7 @@ class PostViewsTest(TestCase):
         self.assertRedirects(response, PROFILE_URL)
         self.assertEqual(
             post.image,
-            f'{Post.image.field.upload_to}another_small.gif'
+            IMAGE_FOLDER + str(form_data["image"])
         )
 
     def test_guest_client_not_create_post(self):
@@ -140,14 +141,13 @@ class PostViewsTest(TestCase):
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(
             post.image,
-            f'{Post.image.field.upload_to}another_small_3.gif'
+            IMAGE_FOLDER + str(form_data["image"]),
         )
 
     def test_guest_or_another_not_edit_post(self):
         """Проверяем редактирование поста неавторизированным
         клиентом или не автором поста"""
         post_count = Post.objects.count()
-        post_before = Post.objects.get(id=self.post.pk)
         clients_not_edit = [
             (self.another_authorized_client, self.POST_URL),
             (self.guest_client, self.EDIT_POST_URL_REDIRECT),
@@ -161,18 +161,21 @@ class PostViewsTest(TestCase):
             "group": self.another_group.id,
             "image": uploaded
         }
-        post_after = Post.objects.get(id=self.post.pk)
         for client, redirect in clients_not_edit:
             with self.subTest(client=client):
                 response = client.post(
                     self.EDIT_POST_URL, data=form_data,
                 )
-                new_post_count = Post.objects.count()
-                self.assertEqual(new_post_count, post_count)
+                post_after = Post.objects.get(id=self.post.pk)
+                self.assertEqual(Post.objects.count(), post_count)
                 self.assertRedirects(response, redirect)
-                self.assertEqual(post_before.text, post_after.text)
-                self.assertEqual(post_before.group, post_after.group)
-                self.assertEqual(post_before.image, post_after.image)
+                self.assertEqual(post_after.author, self.post.author)
+                self.assertNotEqual(post_after.text, form_data["text"])
+                self.assertNotEqual(post_after.group, form_data["group"])
+                self.assertNotEqual(
+                    post_after.image,
+                    IMAGE_FOLDER + str(form_data["image"])
+                )
 
     def test_create_post_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""

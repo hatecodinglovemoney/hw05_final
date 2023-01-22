@@ -5,7 +5,9 @@ from yatube.settings import NUMB_SYMBOLS_SHORT_TEXT
 
 User = get_user_model()
 
-follow_str = "{user} подписан на {author}"
+FOLLOW_STR = "{user} подписан на {author}"
+COMMENT_STR = "Автор {author} написал комментарий: {text}"
+POST_STR = "Автор {author} написал в группе {group} пост: {text}"
 
 
 class Group(models.Model):
@@ -67,7 +69,11 @@ class Post(models.Model):
         ordering = ("-pub_date",)
 
     def __str__(self):
-        return self.text[:NUMB_SYMBOLS_SHORT_TEXT]
+        return POST_STR.format(
+            author=self.author,
+            group=self.group,
+            text=self.text[:NUMB_SYMBOLS_SHORT_TEXT]
+        )
 
 
 class Comment(models.Model):
@@ -98,7 +104,10 @@ class Comment(models.Model):
         ordering = ('-created',)
 
     def __str__(self):
-        return self.text[:NUMB_SYMBOLS_SHORT_TEXT]
+        return COMMENT_STR.format(
+            author=self.author,
+            text=self.text[:NUMB_SYMBOLS_SHORT_TEXT]
+        )
 
 
 class Follow(models.Model):
@@ -126,5 +135,7 @@ class Follow(models.Model):
         ]
 
     def __str__(self):
-        return follow_str.format(user=self.user.username,
-                                 author=self.author.username)
+        return FOLLOW_STR.format(
+            user=self.user.username,
+            author=self.author.username
+        )

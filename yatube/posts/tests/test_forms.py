@@ -170,6 +170,10 @@ class PostViewsTest(TestCase):
                 self.assertEqual(Post.objects.count(), post_count)
                 self.assertRedirects(response, redirect)
                 self.assertEqual(post.author, self.post.author)
+                self.assertEqual(post.text, self.post.text)
+                self.assertEqual(post.image, self.post.image)
+                self.assertEqual(post.group, self.post.group)
+
 
     def test_create_post_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
